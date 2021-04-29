@@ -1,14 +1,14 @@
---Скрипт для выгрузки нецелевки
+--РЎРєСЂРёРїС‚ РґР»СЏ РІС‹РіСЂСѓР·РєРё РЅРµС†РµР»РµРІРєРё
 
---Необходимо почередно пересоздавать все таблицы для получения актуальной информации
+--РќРµРѕР±С…РѕРґРёРјРѕ РїРѕС‡РµСЂРµРґРЅРѕ РїРµСЂРµСЃРѕР·РґР°РІР°С‚СЊ РІСЃРµ С‚Р°Р±Р»РёС†С‹ РґР»СЏ РїРѕР»СѓС‡РµРЅРёСЏ Р°РєС‚СѓР°Р»СЊРЅРѕР№ РёРЅС„РѕСЂРјР°С†РёРё
 
---Содаем таблицу для хранения промежуточной информации
+--РЎРѕРґР°РµРј С‚Р°Р±Р»РёС†Сѓ РґР»СЏ С…СЂР°РЅРµРЅРёСЏ РїСЂРѕРјРµР¶СѓС‚РѕС‡РЅРѕР№ РёРЅС„РѕСЂРјР°С†РёРё
 
 DROP TABLE mp_necel purge;
 CREATE table mp_necel
 AS
 
---Актуальные здания с последним значимым юр.актом
+--РђРєС‚СѓР°Р»СЊРЅС‹Рµ Р·РґР°РЅРёСЏ СЃ РїРѕСЃР»РµРґРЅРёРј Р·РЅР°С‡РёРјС‹Рј СЋСЂ.Р°РєС‚РѕРј
 
 with tab1 as (
 select distinct cadastral_number from  unio.t_object_card_state@opndbp
@@ -23,7 +23,7 @@ or unio.t_directory_value.id = '2506'
 and rosreestr_import.mv_realty.status = 'actual'
 and year = '2022'),
 
---Клеим ЗУ к земле из tab1 и Добавляем ПКБД 60%
+--РљР»РµРёРј Р—РЈ Рє Р·РµРјР»Рµ РёР· tab1 Рё Р”РѕР±Р°РІР»СЏРµРј РџРљР‘Р” 60%
 
 tab5 as (
 select * from rosreestr_import.mv_building_to_land
@@ -34,7 +34,7 @@ select * from ROSREESTR_IMPORT.mv_under_construction_to_land
 union
 select mp_egrn60.cadnum, mp_egrn60.land_cadnum from mp_egrn60),
 
---Объединяем землю и здания 
+--РћР±СЉРµРґРёРЅСЏРµРј Р·РµРјР»СЋ Рё Р·РґР°РЅРёСЏ 
 
 tab6 as (
 select * from tab5
@@ -42,20 +42,20 @@ join tab1 on tab1.cadastral_number = tab5.realty_id)
 
 select * from tab6;
 
---Формируем таблицу с итоговыми КН
+--Р¤РѕСЂРјРёСЂСѓРµРј С‚Р°Р±Р»РёС†Сѓ СЃ РёС‚РѕРіРѕРІС‹РјРё РљРќ
 
 DROP TABLE mp_necelf purge;
 CREATE table mp_necelf
 AS
 
---Проверка ЗУ на актуальность
+--РџСЂРѕРІРµСЂРєР° Р—РЈ РЅР° Р°РєС‚СѓР°Р»СЊРЅРѕСЃС‚СЊ
 
 with tab2 as (
 select distinct mp_necel.realty_id, mp_necel.land_cadnum, rosreestr_import.mv_land.category from mp_necel
 left join rosreestr_import.mv_land on rosreestr_import.mv_land.RECORD_ID = mp_necel.LAND_CADNUM
 where rosreestr_import.mv_land.cancel_date is null),
 
---ВРИ ЗУ со статусом 2 и без статуса
+--Р’Р Р Р—РЈ СЃРѕ СЃС‚Р°С‚СѓСЃРѕРј 2 Рё Р±РµР· СЃС‚Р°С‚СѓСЃР°
 
 tab4 as (
 select tab2.realty_id, tab2.land_cadnum, tab2.category from tab2
@@ -93,7 +93,7 @@ select distinct * from mp_necelf)
 
 select distinct * from tab1111;
 
---Выгрузка КН и склейка информации о собственнике,виде права и доле
+--Р’С‹РіСЂСѓР·РєР° РљРќ Рё СЃРєР»РµР№РєР° РёРЅС„РѕСЂРјР°С†РёРё Рѕ СЃРѕР±СЃС‚РІРµРЅРЅРёРєРµ,РІРёРґРµ РїСЂР°РІР° Рё РґРѕР»Рµ
 
 DROP TABLE mp_tab11 PURGE;
 CREATE table mp_tab11
@@ -111,7 +111,7 @@ group by tab10.realty_id)
 
 select * from tab11;
 
---Общая площадь помещения
+--РћР±С‰Р°СЏ РїР»РѕС‰Р°РґСЊ РїРѕРјРµС‰РµРЅРёСЏ
 
 DROP TABLE mp_tab12 PURGE;
 CREATE table mp_tab12
@@ -124,7 +124,7 @@ group by oks_cadnum)
 
 select * from tab12;
 
---Площадь с правом
+--РџР»РѕС‰Р°РґСЊ СЃ РїСЂР°РІРѕРј
 
 DROP TABLE mp_tab13 PURGE;
 CREATE table mp_tab13
@@ -139,7 +139,7 @@ group by oks_cadnum
 
 select * from tab13;
 
---Соединение информации по помещениям
+--РЎРѕРµРґРёРЅРµРЅРёРµ РёРЅС„РѕСЂРјР°С†РёРё РїРѕ РїРѕРјРµС‰РµРЅРёСЏРј
 
 DROP TABLE mp_tab15 PURGE;
 CREATE table mp_tab15
@@ -163,7 +163,7 @@ join tab15 on tab15.record_id = rosreestr_import.mv_flat.record_id)
 
 select * from tab151;
 
---Площадь, наименование,  тип объекта и назначение,  
+--РџР»РѕС‰Р°РґСЊ, РЅР°РёРјРµРЅРѕРІР°РЅРёРµ,  С‚РёРї РѕР±СЉРµРєС‚Р° Рё РЅР°Р·РЅР°С‡РµРЅРёРµ,  
 
 DROP TABLE mp_tab16 PURGE;
 CREATE table mp_tab16
@@ -176,7 +176,7 @@ inner join mp_necelf on mp_necelf.realty_id = ROSREESTR_IMPORT.mv_realty.CADNUM
 
 select * from tab16;
 
---Комментарий ЕГРН из ASUR
+--РљРѕРјРјРµРЅС‚Р°СЂРёР№ Р•Р“Р Рќ РёР· ASUR
 
 DROP TABLE mp_tab18 PURGE;
 CREATE table mp_tab18
@@ -190,7 +190,7 @@ where asur_rr2_20200707.t$rr#realty.note is not null)
 select * from tab18;
 
 
---ОКН
+--РћРљРќ
 
 DROP TABLE mp_tab211 purge;
 CREATE table mp_tab211
@@ -200,8 +200,8 @@ with tab211 as(
 select distinct MP_NECELFDIST.realty_id,
 case
 when  mp_okn.okn_fz is null 
-then 'Нет'
-Else 'Да'
+then 'РќРµС‚'
+Else 'Р”Р°'
 End as okn_fz
 from MP_NECELFDIST
 right join mp_okn on mp_okn.okn_fz = MP_NECELFDIST.realty_id
@@ -209,7 +209,7 @@ right join mp_okn on mp_okn.okn_fz = MP_NECELFDIST.realty_id
 
 select * from tab211;
 
---Признак оперативного управления, пешеходная зона, владение МСК\РФ, предназначение, включен в перечень 22
+--РџСЂРёР·РЅР°Рє РѕРїРµСЂР°С‚РёРІРЅРѕРіРѕ СѓРїСЂР°РІР»РµРЅРёСЏ, РїРµС€РµС…РѕРґРЅР°СЏ Р·РѕРЅР°, РІР»Р°РґРµРЅРёРµ РњРЎРљ\Р Р¤, РїСЂРµРґРЅР°Р·РЅР°С‡РµРЅРёРµ, РІРєР»СЋС‡РµРЅ РІ РїРµСЂРµС‡РµРЅСЊ 22
 
 DROP TABLE mp_tab21 PURGE;
 CREATE table mp_tab21
@@ -223,15 +223,15 @@ UNIO.t_object_card_state.PEDESTRIAN_ZONE,
 UNIO.t_object_card_state.INCLUDE_BY_BTI, 
 case
 when  INCLUSION_CRITERION = 'DGI' 
-then 'ВРИ ЗУ' 
+then 'Р’Р Р Р—РЈ' 
 when INCLUSION_CRITERION = 'MVK' 
-then 'ВФИ' 
+then 'Р’Р¤Р' 
 when INCLUSION_CRITERION = 'VRI_ZU'
-then 'ВРИ ЗУ'
+then 'Р’Р Р Р—РЈ'
 when INCLUSION_CRITERION = 'VFI'
-then 'ВФИ'
+then 'Р’Р¤Р'
 when INCLUSION_CRITERION =  'EXCLUDED'
-then 'Исключен'
+then 'РСЃРєР»СЋС‡РµРЅ'
 end as fix22
 from UNIO.t_object_card_state@opndbp
 inner join MP_NECELFDIST on MP_NECELFDIST.realty_id = UNIO.t_object_card_state.cadastral_number
@@ -239,7 +239,7 @@ where year = '2022')
 
 select * from tab21;
 
---Номер акта, дата акта, допуск на объект, обстоятельства, результат, коммент, коммент к результату
+--РќРѕРјРµСЂ Р°РєС‚Р°, РґР°С‚Р° Р°РєС‚Р°, РґРѕРїСѓСЃРє РЅР° РѕР±СЉРµРєС‚, РѕР±СЃС‚РѕСЏС‚РµР»СЊСЃС‚РІР°, СЂРµР·СѓР»СЊС‚Р°С‚, РєРѕРјРјРµРЅС‚, РєРѕРјРјРµРЅС‚ Рє СЂРµР·СѓР»СЊС‚Р°С‚Сѓ
 
 DROP TABLE mp_tab23 PURGE;
 CREATE table mp_tab23
@@ -262,7 +262,7 @@ where year = '2022')
 
 select * from tab23;
  
---Включен в перечень 21
+--Р’РєР»СЋС‡РµРЅ РІ РїРµСЂРµС‡РµРЅСЊ 21
 
 DROP TABLE mp_tab24 PURGE;
 CREATE table mp_tab24
@@ -272,15 +272,15 @@ with tab24 as(
 select cadastral_number,
 case
 when  FIXED_INCLUSION_CRITERION = 'DGI' 
-then 'ВРИ ЗУ' 
+then 'Р’Р Р Р—РЈ' 
 when FIXED_INCLUSION_CRITERION = 'MVK' 
-then 'ВФИ' 
+then 'Р’Р¤Р' 
 when FIXED_INCLUSION_CRITERION = 'VRI_ZU'
-then 'ВРИ ЗУ'
+then 'Р’Р Р Р—РЈ'
 when FIXED_INCLUSION_CRITERION = 'VFI'
-then 'ВФИ'
+then 'Р’Р¤Р'
 when FIXED_INCLUSION_CRITERION =  'EXCLUDED'
-then 'Исключен'
+then 'РСЃРєР»СЋС‡РµРЅ'
 end as fix21
 from unio.t_object_card_state@opndbp
 left join mp_necelf on mp_necelf.realty_id = UNIO.t_object_card_state.cadastral_number
@@ -288,7 +288,7 @@ where year = '2021')
 
 select * from tab24;
 
---Информация по ЗУ 
+--РРЅС„РѕСЂРјР°С†РёСЏ РїРѕ Р—РЈ 
 
 DROP TABLE mp_tab2612 purge;
 CREATE table mp_tab2612
@@ -311,7 +311,7 @@ left join  mp_egrn60 on  mp_egrn60.land_cadnum =  mp_tab2612.land_cadnum
 
 select * from tab2613;
 
---Собственник ЗУ, вид права, доля
+--РЎРѕР±СЃС‚РІРµРЅРЅРёРє Р—РЈ, РІРёРґ РїСЂР°РІР°, РґРѕР»СЏ
 
 DROP TABLE mp_tab27 purge;
 CREATE table mp_tab27
@@ -330,7 +330,7 @@ group by tab27.record_id)
 
 select * from tab11;
 
---ВРИ ЗУ
+--Р’Р Р Р—РЈ
 
 DROP TABLE mp_tab28 PURGE;
 CREATE table mp_tab28
@@ -341,7 +341,7 @@ select rosreestr_import.mv_land.record_id, rosreestr_import.mv_land.pu_by_docume
 inner join rosreestr_IMPORT.mv_land on mp_necelf.land_cadnum = rosreestr_IMPORT.mv_land.record_id)
 select * from tab28;
 
---ВРИ ЗУ 2020
+--Р’Р Р Р—РЈ 2020
 
 DROP TABLE mp_tab30 PURGE;
 CREATE table mp_tab30
@@ -369,7 +369,7 @@ join library_vri_zu_20200929 on library_vri_zu_20200929.vri = mp_tab30.vri_by_do
 
 select * from tab31;
 
---Бесхоз
+--Р‘РµСЃС…РѕР·
 
 DROP TABLE mp_tab32 PURGE;
 CREATE table mp_tab32
@@ -378,7 +378,7 @@ AS
 with tab32 as(
 select * from av_egrp_20200707
 right join mp_necelf on mp_necelf.realty_id = av_egrp_20200707.num_cadnum
-where av_egrp_20200707.TP_NAME like '%бесхоз%')
+where av_egrp_20200707.TP_NAME like '%Р±РµСЃС…РѕР·%')
 
 select * from tab32;
 
@@ -388,74 +388,74 @@ AS
 
 with tab33 as(
 select num_cadnum, case 
-when tp_name = 'Принят на учет как бесхозяйный объект недвижимого имущества'
-then 'Да'
-Else 'Нет'
+when tp_name = 'РџСЂРёРЅСЏС‚ РЅР° СѓС‡РµС‚ РєР°Рє Р±РµСЃС…РѕР·СЏР№РЅС‹Р№ РѕР±СЉРµРєС‚ РЅРµРґРІРёР¶РёРјРѕРіРѕ РёРјСѓС‰РµСЃС‚РІР°'
+then 'Р”Р°'
+Else 'РќРµС‚'
 end as beshoz
 from mp_tab32
 )
 
 select * from tab33;
 
---Итоговая выгрузка отобраных объектов
+--РС‚РѕРіРѕРІР°СЏ РІС‹РіСЂСѓР·РєР° РѕС‚РѕР±СЂР°РЅС‹С… РѕР±СЉРµРєС‚РѕРІ
 
 DROP TABLE mp_necel_full purge;
 CREATE table mp_necel_full
 AS
 
 select distinct
-MP_NECELF.realty_id as "Кадастровый номер объекта",
-mp_tab33.beshoz as "Бесхоз",
-dbms_lob.substr(mp_tab11.name1, 4000, 1) as "Собственник ОКС",
-mp_tab12.area1 as "Общая площадь нежел",
-mp_tab13.area2 as "Площадь с правом",
-mp_tab16.area as "Площадь объекта",
-mp_tab16.object_type as "Тип объекта",
-mp_tab16.name as "Тип и назначение объекта",
-mp_tab16.addr_gkn_struct as  Адрес,
-mp_tab16.living as "Жилое",
-mp_tab16.IS_NEW_MOSCOW as "Новая Москва",
-dbms_lob.substr(mp_tab18.note, 4000, 1) as "Комментарий ЕГРН",
+MP_NECELF.realty_id as "РљР°РґР°СЃС‚СЂРѕРІС‹Р№ РЅРѕРјРµСЂ РѕР±СЉРµРєС‚Р°",
+mp_tab33.beshoz as "Р‘РµСЃС…РѕР·",
+dbms_lob.substr(mp_tab11.name1, 4000, 1) as "РЎРѕР±СЃС‚РІРµРЅРЅРёРє РћРљРЎ",
+mp_tab12.area1 as "РћР±С‰Р°СЏ РїР»РѕС‰Р°РґСЊ РЅРµР¶РµР»",
+mp_tab13.area2 as "РџР»РѕС‰Р°РґСЊ СЃ РїСЂР°РІРѕРј",
+mp_tab16.area as "РџР»РѕС‰Р°РґСЊ РѕР±СЉРµРєС‚Р°",
+mp_tab16.object_type as "РўРёРї РѕР±СЉРµРєС‚Р°",
+mp_tab16.name as "РўРёРї Рё РЅР°Р·РЅР°С‡РµРЅРёРµ РѕР±СЉРµРєС‚Р°",
+mp_tab16.addr_gkn_struct as  РђРґСЂРµСЃ,
+mp_tab16.living as "Р–РёР»РѕРµ",
+mp_tab16.IS_NEW_MOSCOW as "РќРѕРІР°СЏ РњРѕСЃРєРІР°",
+dbms_lob.substr(mp_tab18.note, 4000, 1) as "РљРѕРјРјРµРЅС‚Р°СЂРёР№ Р•Р“Р Рќ",
 case 
 when mp_tab21.moscow_ownership  = 'OPERATIONAL_OWN'
-then 'Да'
-end as "Собственность МСК",
+then 'Р”Р°'
+end as "РЎРѕР±СЃС‚РІРµРЅРЅРѕСЃС‚СЊ РњРЎРљ",
 case 
 when mp_tab21.rf_ownership  = 'OPERATIONAL_OWN'
-then 'Да'
-end as "Федеральная собственность",
-mp_tab211.okn_fz as ОКН,
-mp_tab21.pedestrian_zone as "Пешеходная зона",
-mp_tab21.INCLUDE_BY_BTI as "Признак значения БТИ",
-mp_tab24.fix21 as "Включен в перечень 2021",
-mp_tab21.fix22 as "Включен в перечень 2022",
-mp_tab23.number_survey_act as "Номер акта",
-mp_tab23.date_of_drawing_up as "Дата акта",
-mp_tab23.inspectors_got_to_oks as "Допущен на объект",
-mp_tab23.NOT_GOT_TO_OKS_CONDITIONS as "Обстоятельства препятствующие",
-mp_tab23.value as "Результат",
-mp_tab23.comments as "Коментарий из карточки",
-mp_tab23.results_comments as "Коментарий к результату",
-mp_tab2613.land_cadnum as "ЗУ",
+then 'Р”Р°'
+end as "Р¤РµРґРµСЂР°Р»СЊРЅР°СЏ СЃРѕР±СЃС‚РІРµРЅРЅРѕСЃС‚СЊ",
+mp_tab211.okn_fz as РћРљРќ,
+mp_tab21.pedestrian_zone as "РџРµС€РµС…РѕРґРЅР°СЏ Р·РѕРЅР°",
+mp_tab21.INCLUDE_BY_BTI as "РџСЂРёР·РЅР°Рє Р·РЅР°С‡РµРЅРёСЏ Р‘РўР",
+mp_tab24.fix21 as "Р’РєР»СЋС‡РµРЅ РІ РїРµСЂРµС‡РµРЅСЊ 2021",
+mp_tab21.fix22 as "Р’РєР»СЋС‡РµРЅ РІ РїРµСЂРµС‡РµРЅСЊ 2022",
+mp_tab23.number_survey_act as "РќРѕРјРµСЂ Р°РєС‚Р°",
+mp_tab23.date_of_drawing_up as "Р”Р°С‚Р° Р°РєС‚Р°",
+mp_tab23.inspectors_got_to_oks as "Р”РѕРїСѓС‰РµРЅ РЅР° РѕР±СЉРµРєС‚",
+mp_tab23.NOT_GOT_TO_OKS_CONDITIONS as "РћР±СЃС‚РѕСЏС‚РµР»СЊСЃС‚РІР° РїСЂРµРїСЏС‚СЃС‚РІСѓСЋС‰РёРµ",
+mp_tab23.value as "Р РµР·СѓР»СЊС‚Р°С‚",
+mp_tab23.comments as "РљРѕРјРµРЅС‚Р°СЂРёР№ РёР· РєР°СЂС‚РѕС‡РєРё",
+mp_tab23.results_comments as "РљРѕРјРµРЅС‚Р°СЂРёР№ Рє СЂРµР·СѓР»СЊС‚Р°С‚Сѓ",
+mp_tab2613.land_cadnum as "Р—РЈ",
 case 
 when dbms_lob.substr(mp_tab2613.cancel_date, 4000, 1) is null
-then 'Актуальный'
-else 'Aрхивный'
-end as "Статус ЗУ",
+then 'РђРєС‚СѓР°Р»СЊРЅС‹Р№'
+else 'AСЂС…РёРІРЅС‹Р№'
+end as "РЎС‚Р°С‚СѓСЃ Р—РЈ",
 case
 when mp_tab2613.PKBD = '99'
-then 'ПКБД'
-else 'ГКН' 
-end as "Источник информации ЗУ",
-mp_tab2613.percent as "% пересечения с ЗУ",
-dbms_lob.substr(mp_tab28.pu_by_document, 4000, 1) as "ВРИ ЗУ в текщем дампе",
-dbms_lob.substr(mp_tab28.reg_date, 4000, 1) as "Дата присвоения ВРИ",
-mp_tab27.qwe1 as "Собственник ЗУ",
-mp_tab28.category as "Категория",
-mp_tab31.vri_by_doc as "ВРИ ЗУ 07 07 2020",
-mp_tab31.DT as "Дата присвоения ВРИ20",
-mp_tab31.name4 as "Документ присвоения ВРИ",
-mp_tab31.group_vri_zu as "Категория ЗУ"
+then 'РџРљР‘Р”'
+else 'Р“РљРќ' 
+end as "РСЃС‚РѕС‡РЅРёРє РёРЅС„РѕСЂРјР°С†РёРё Р—РЈ",
+mp_tab2613.percent as "% РїРµСЂРµСЃРµС‡РµРЅРёСЏ СЃ Р—РЈ",
+dbms_lob.substr(mp_tab28.pu_by_document, 4000, 1) as "Р’Р Р Р—РЈ РІ С‚РµРєС‰РµРј РґР°РјРїРµ",
+dbms_lob.substr(mp_tab28.reg_date, 4000, 1) as "Р”Р°С‚Р° РїСЂРёСЃРІРѕРµРЅРёСЏ Р’Р Р",
+mp_tab27.qwe1 as "РЎРѕР±СЃС‚РІРµРЅРЅРёРє Р—РЈ",
+mp_tab28.category as "РљР°С‚РµРіРѕСЂРёСЏ",
+mp_tab31.vri_by_doc as "Р’Р Р Р—РЈ 07 07 2020",
+mp_tab31.DT as "Р”Р°С‚Р° РїСЂРёСЃРІРѕРµРЅРёСЏ Р’Р Р20",
+mp_tab31.name4 as "Р”РѕРєСѓРјРµРЅС‚ РїСЂРёСЃРІРѕРµРЅРёСЏ Р’Р Р",
+mp_tab31.group_vri_zu as "РљР°С‚РµРіРѕСЂРёСЏ Р—РЈ"
 
 from mp_necelf
 
