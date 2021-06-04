@@ -15,11 +15,11 @@ select distinct cadastral_number from  unio.t_object_card_state@opndbp
 left join rosreestr_import.mv_realty on rosreestr_import.mv_realty.cadnum = unio.t_object_card_state.cadastral_number
 left join UNIO.t_gin_verification@opndbp on unio.t_object_card_state.last_year_verification = unio.t_gin_verification.id@opndbp
 join unio.t_directory_value@opndbp on unio.t_directory_value.id@opndbp = UNIO.t_gin_verification.RESULT_ID
-where unio.t_directory_value.id = '2510' 
+where (unio.t_directory_value.id = '2510' 
 or unio.t_directory_value.id = '2503' 
 or unio.t_directory_value.id = '2504' 
 or unio.t_directory_value.id = '2505' 
-or unio.t_directory_value.id = '2506'
+or unio.t_directory_value.id = '2506')
 and rosreestr_import.mv_realty.status = 'actual'
 and year = '2022'),
 
@@ -32,13 +32,23 @@ select * from ROSREESTR_IMPORT.mv_structure_to_land
 union
 select * from ROSREESTR_IMPORT.mv_under_construction_to_land
 union
-select mp_egrn60.cadnum, mp_egrn60.land_cadnum from mp_egrn60),
+select read_user.mp_egrn60.cadnum, read_user.mp_egrn60.land_cadnum from read_user.mp_egrn60),
+
+--Проверяем землю и постройки на актуальнось
+
+tab51 as(
+select * from tab5
+left join rosreestr_import.mv_realty on rosreestr_import.mv_realty.cadnum = tab5.realty_id
+left join rosreestr_import.mv_land on rosreestr_import.mv_land.record_id = tab5.land_cadnum
+where rosreestr_import.mv_realty.status = 'actual' 
+and rosreestr_import.mv_land.CANCEL_DATE is null),
+
 
 --Объединяем землю и здания 
 
 tab6 as (
-select * from tab5
-join tab1 on tab1.cadastral_number = tab5.realty_id)
+select realty_id, land_cadnum from tab51
+join tab1 on tab1.cadastral_number = tab51.realty_id)
 
 select * from tab6;
 
@@ -197,14 +207,14 @@ CREATE table mp_tab211
 AS
 
 with tab211 as(
-select distinct MP_NECELFDIST.realty_id,
+select distinct read_user.MP_NECELFDIST.realty_id,
 case
 when  mp_okn.okn_fz is null 
 then 'Нет'
 Else 'Да'
 End as okn_fz
-from MP_NECELFDIST
-right join mp_okn on mp_okn.okn_fz = MP_NECELFDIST.realty_id
+from read_user.MP_NECELFDIST
+right join read_user.mp_okn on read_user.mp_okn.okn_fz = read_user.MP_NECELFDIST.realty_id
 )
 
 select * from tab211;
@@ -304,9 +314,9 @@ CREATE table mp_tab2613
 AS
 
 with tab2613 as ( 
-select distinct mp_tab2612.realty_id, mp_tab2612.land_cadnum, mp_egrn60.PERCENT,  mp_egrn60.EGRN,  mp_egrn60.PKBD, cancel_date from mp_tab2612
-left join  mp_egrn60 on  mp_egrn60.cadnum =  mp_tab2612.realty_id
-left join  mp_egrn60 on  mp_egrn60.land_cadnum =  mp_tab2612.land_cadnum
+select distinct read_user.mp_tab2612.realty_id, read_user.mp_tab2612.land_cadnum, read_user.mp_egrn60.PERCENT,  read_user.mp_egrn60.EGRN,  read_user.mp_egrn60.PKBD, cancel_date from read_user.mp_tab2612
+left join  read_user.mp_egrn60 on read_user.mp_egrn60.cadnum =  read_user.mp_tab2612.realty_id
+left join  read_user.mp_egrn60 on  read_user.mp_egrn60.land_cadnum =  read_user.mp_tab2612.land_cadnum
 )
 
 select * from tab2613;
@@ -314,7 +324,7 @@ select * from tab2613;
 --Собственник ЗУ, вид права, доля
 
 DROP TABLE mp_tab27 purge;
-CREATE table mp_tab271
+CREATE table mp_tab27
 AS
 
 with tab27 as(
@@ -361,13 +371,51 @@ CREATE table mp_tab31
 AS
 
 with tab31 as(
-select distinct mp_tab30.land_cadnum, mp_tab30.vri_by_doc, asur_cr2_20200707.t$cr#doc.name as name4, library_vri_zu_20200929.group_vri_zu, asur_cr2_20200707.t$cr#doc.DT  from (select mp_tab30.land_cadnum, max(asur_cr2_20200707.t$cr#doc.DT) as dt from mp_tab30
-inner join asur_cr2_20200707.t$cr#doc on asur_cr2_20200707.t$cr#doc.doc_id = mp_tab30.doc_id
-group by mp_tab30.land_cadnum)
-left join asur_cr2_20200707.t$cr#doc on mp_tab30.DOC_ID = asur_cr2_20200707.t$cr#doc.DOC_ID
-join library_vri_zu_20200929 on library_vri_zu_20200929.vri = mp_tab30.vri_by_doc)
+SELECT DISTINCT
+    mp_tab30.land_cadnum,
+    mp_tab30.vri_by_doc,
+    asur_cr2_20200707.t$cr#doc.name AS name4,
+    read_user.library_vri_zu_20200929.group_vri_zu,
+    asur_cr2_20200707.t$cr#doc.dt
+FROM
+    (
+        SELECT
+            mp_tab30.land_cadnum,
+            MAX(asur_cr2_20200707.t$cr#doc.dt) AS dt
+        FROM
+            mp_tab30
+            INNER JOIN asur_cr2_20200707.t$cr#doc ON asur_cr2_20200707.t$cr#doc.doc_id = mp_tab30.doc_id
+        GROUP BY
+            mp_tab30.land_cadnum
+    ) tab1
+     left join mp_tab30 on mp_tab30.land_cadnum = tab1.land_cadnum
+    LEFT JOIN asur_cr2_20200707.t$cr#doc ON mp_tab30.doc_id = asur_cr2_20200707.t$cr#doc.doc_id
+    JOIN read_user.library_vri_zu_20200929 ON read_user.library_vri_zu_20200929.vri = mp_tab30.vri_by_doc)
 
 select * from tab31;
+
+
+SELECT DISTINCT
+    mp_tab30.land_cadnum,
+    mp_tab30.vri_by_doc,
+    asur_cr2_20200707.t$cr#doc.name AS name4,
+    read_user.library_vri_zu_20200929.group_vri_zu,
+    asur_cr2_20200707.t$cr#doc.dt
+FROM
+    (
+        SELECT
+            mp_tab30.land_cadnum,
+            MAX(asur_cr2_20200707.t$cr#doc.dt) AS dt
+        FROM
+            mp_tab30
+            INNER JOIN asur_cr2_20200707.t$cr#doc ON asur_cr2_20200707.t$cr#doc.doc_id = mp_tab30.doc_id
+        GROUP BY
+            mp_tab30.land_cadnum
+    ) tab1
+     left join mp_tab30 on mp_tab30.land_cadnum = tab1.land_cadnum
+    LEFT JOIN asur_cr2_20200707.t$cr#doc ON mp_tab30.doc_id = asur_cr2_20200707.t$cr#doc.doc_id
+    JOIN read_user.library_vri_zu_20200929 ON read_user.library_vri_zu_20200929.vri = mp_tab30.vri_by_doc;
+
 
 --Бесхоз
 
@@ -376,9 +424,9 @@ CREATE table mp_tab32
 AS
 
 with tab32 as(
-select * from av_egrp_20200707
-right join mp_necelf on mp_necelf.realty_id = av_egrp_20200707.num_cadnum
-where av_egrp_20200707.TP_NAME like '%бесхоз%')
+select * from read_user.av_egrp_20200707
+right join mp_necelf on mp_necelf.realty_id = read_user.av_egrp_20200707.num_cadnum
+where read_user.av_egrp_20200707.TP_NAME like '%бесхоз%')
 
 select * from tab32;
 
@@ -400,7 +448,7 @@ select * from tab33;
 --Итоговая выгрузка отобраных объектов
 
 DROP TABLE mp_necel_full purge;
-CREATE table mp_necel_fin
+CREATE table mp_necel_full
 AS
 
 select distinct
@@ -475,3 +523,12 @@ left join mp_tab271 on mp_necelf.land_cadnum = mp_tab271.record_id
 left join mp_tab28 on mp_necelf.land_cadnum = mp_tab28.record_id
 left join mp_tab30 on mp_necelf.land_cadnum = mp_tab30.land_cadnum
 left join mp_tab31 on mp_necelf.land_cadnum = mp_tab31.land_cadnum;
+
+-- Чистим пустую площадь
+
+DROP TABLE mp_necel_final purge;
+CREATE table mp_necel_final
+AS
+
+select * from mp_necel_full
+where "Общая площадь нежел" is not null;
